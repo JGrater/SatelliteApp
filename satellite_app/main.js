@@ -1,6 +1,8 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import Stats from 'stats.js'
+import vertexShader from './shaders/vertex.glsl'
+import fragmentShader from './shaders/fragment.glsl'
 
 const stats = new Stats()
 stats.showPanel(0) // 0: fps, 1: ms, 2: mb, 3+: custom
@@ -23,25 +25,43 @@ renderer.setPixelRatio(window.devicePixelRatio)
 
 document.body.appendChild(renderer.domElement)
 
-const surface = new THREE.Mesh(
+const earth = new THREE.Mesh(
   new THREE.SphereGeometry(1, 32, 32), 
   new THREE.MeshPhongMaterial({
     map: new THREE.TextureLoader().load('./images/2_no_clouds_8k.jpg'),
     bumpMap: new THREE.TextureLoader().load('./images/elev_bump_8k.jpg'),
     bumpScale: 1,
     specularMap: new THREE.TextureLoader().load('./images/water_8k.png'),
-    specular: new THREE.Color('grey')
+    specular: new THREE.Color(0x804f00),
+    shininess: 25
   })
 )
 
-
 const clouds = new THREE.Mesh(
-  new THREE.SphereGeometry(1.01, 32, 32), 
+  new THREE.SphereGeometry(1.001, 64, 64), 
   new THREE.MeshPhongMaterial({
     map: new THREE.TextureLoader().load('./images/fair_clouds_4k.png'),
     transparent: true
   })
 )
+
+const atmosphereShader = new THREE.ShaderMaterial({
+  uniforms: {
+    "c": { type: "f", value: 0.5 },
+    "p": { type: "f", value: 6 },
+    glowColor: { type: "c", value: new THREE.Color(0.2, 0.5, 0.9) },
+    viewVector: { type: "v3", value: camera.position }
+  },
+  vertexShader: vertexShader,
+	fragmentShader: fragmentShader,
+  side: THREE.BackSide,
+	blending: THREE.AdditiveBlending,
+	transparent: true
+})
+
+const atmosphere = new THREE.Mesh( new THREE.SphereGeometry(1.3, 32, 16), atmosphereShader.clone() )
+atmosphere.position.set(earth.position.x, earth.position.y, earth.position.z)
+atmosphere.scale.multiplyScalar(1.2);
 
 /*
 const starfield = new THREE.Mesh(
@@ -63,13 +83,12 @@ var cloud_speed = 0.007 * (Math.PI / 180)
 earth_quaternion.setFromAxisAngle(earthAxis, earth_speed)
 cloud_quaternion.setFromAxisAngle(earthAxis, cloud_speed)
 
-
-
-surface.applyMatrix4( new THREE.Matrix4().makeRotationZ( - axisTilt ) )
+earth.applyMatrix4( new THREE.Matrix4().makeRotationZ( - axisTilt ) )
 clouds.applyMatrix4( new THREE.Matrix4().makeRotationZ( - axisTilt ) )
 
-scene.add(surface)
+scene.add(earth)
 scene.add(clouds)
+scene.add(atmosphere)
 //scene.add(starfield)
 
 camera.position.z = 2
@@ -78,7 +97,7 @@ camera.position.z = 2
 const ambientLight = new THREE.AmbientLight(0x151515)
 scene.add(ambientLight)
 
-var light = new THREE.DirectionalLight(0xffffff, 2)
+var light = new THREE.DirectionalLight(0xffffff, 3)
 light.position.set(5,3,5);
 scene.add(light);
 
@@ -94,8 +113,10 @@ function onWindowResize() {
 function animate() {
   stats.begin()
   controls.update()
-  surface.applyQuaternion(earth_quaternion)
+  earth.applyQuaternion(earth_quaternion)
   clouds.applyQuaternion(cloud_quaternion)
+  atmosphere.material.uniforms.viewVector.value = 
+  new THREE.Vector3().subVectors( camera.position, atmosphere.position );
   stats.end()
   requestAnimationFrame(animate)
   renderer.render(scene, camera)
