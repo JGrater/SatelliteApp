@@ -13,6 +13,7 @@
     "vite-plugin-string": "^1.2.2"
   },
   "dependencies": {
+    "satellite.js": "^5.0.0",
     "stats.js": "^0.17.0",
     "three": "^0.158.0"
   }

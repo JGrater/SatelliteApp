@@ -18,7 +18,7 @@ const renderer = new THREE.WebGLRenderer(
 )
 
 const controls = new OrbitControls(camera, renderer.domElement)
-controls.minDistance = 1.137600184552919
+controls.minDistance = 6.137600184552919
 
 renderer.setSize(innerWidth, innerHeight)
 renderer.setPixelRatio(window.devicePixelRatio)
@@ -26,7 +26,7 @@ renderer.setPixelRatio(window.devicePixelRatio)
 document.body.appendChild(renderer.domElement)
 
 const earth = new THREE.Mesh(
-  new THREE.SphereGeometry(1, 32, 32), 
+  new THREE.SphereGeometry(6.371, 32, 32), 
   new THREE.MeshPhongMaterial({
     map: new THREE.TextureLoader().load('./images/2_no_clouds_8k.jpg'),
     bumpMap: new THREE.TextureLoader().load('./images/elev_bump_8k.jpg'),
@@ -38,7 +38,7 @@ const earth = new THREE.Mesh(
 )
 
 const clouds = new THREE.Mesh(
-  new THREE.SphereGeometry(1.001, 64, 64), 
+  new THREE.SphereGeometry(6.372, 64, 64), 
   new THREE.MeshPhongMaterial({
     map: new THREE.TextureLoader().load('./images/fair_clouds_4k.png'),
     transparent: true
@@ -59,9 +59,16 @@ const atmosphereShader = new THREE.ShaderMaterial({
 	transparent: true
 })
 
-const atmosphere = new THREE.Mesh( new THREE.SphereGeometry(1.3, 32, 16), atmosphereShader.clone() )
+const atmosphere = new THREE.Mesh( new THREE.SphereGeometry(1.3, 32, 32), atmosphereShader.clone() )
 atmosphere.position.set(earth.position.x, earth.position.y, earth.position.z)
-atmosphere.scale.multiplyScalar(1.2);
+atmosphere.scale.multiplyScalar(6.2);
+
+const iss = new THREE.Mesh(
+  new THREE.SphereGeometry(1, 32, 32),
+  new THREE.MeshBasicMaterial({ color: 0xff0000 })
+);
+
+scene.add(iss);
 
 /*
 const starfield = new THREE.Mesh(
@@ -91,7 +98,7 @@ scene.add(clouds)
 scene.add(atmosphere)
 //scene.add(starfield)
 
-camera.position.z = 2
+camera.position.z = 12
 
 // Add a light source
 const ambientLight = new THREE.AmbientLight(0x151515)
@@ -102,13 +109,19 @@ light.position.set(5,3,5);
 scene.add(light);
 
 window.addEventListener('resize', onWindowResize, false)
+
+animate()
+
+function updateSatellitePosition() {
+
+}
+
 function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight
     camera.updateProjectionMatrix()
     renderer.setSize(window.innerWidth, window.innerHeight)
     renderer.render()
 }
-
 
 function animate() {
   stats.begin()
@@ -119,7 +132,6 @@ function animate() {
   new THREE.Vector3().subVectors( camera.position, atmosphere.position );
   stats.end()
   requestAnimationFrame(animate)
+  updateSatellitePosition();
   renderer.render(scene, camera)
 }
-
-animate()
