@@ -128,8 +128,7 @@ function animate() {
   controls.update()
   earth.applyQuaternion(earth_quaternion)
   clouds.applyQuaternion(cloud_quaternion)
-  atmosphere.material.uniforms.viewVector.value = 
-  new THREE.Vector3().subVectors( camera.position, atmosphere.position );
+  atmosphere.material.uniforms.viewVector.value = new THREE.Vector3().subVectors( camera.position, atmosphere.position );
   stats.end()
   requestAnimationFrame(animate)
   updateSatellitePosition();
