@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import { earthRadius } from "satellite.js/lib/index";
+import { earthRadius } from "satellite.js/lib/constants";
 import * as satellite from 'satellite.js/lib/index';
 import earthMap from './assets/2_no_clouds_8k.jpg'
 import earthBumpMap from './assets/elev_bump_8k.jpg'
@@ -14,22 +14,34 @@ const minutesPerDay = 1440
 export class Engine {
 
     satellites = [];
+    el = null;
 
     //<---------------------------Initialise---------------------------->
 
-    initialise() {
+    initialise(container, options = {}) {
+        this.el = container;
+        this.raycaster = new THREE.Raycaster();
         this.setScene();
-        this.setLights();
-        this.addObjects();
+        //this.setLights();
+        //this.addObjects();
 
         this.render();
 
-        window.addEventListener('resize', this.handleWindowResize, false)
+        window.addEventListener('resize', this.handleWindowResize)
+    }
+
+    dispose() {
+        window.removeEventListener('resize', this.handleWindowResize);
+
+        this.raycaster = null;
+        this.el = null;
+
+        this.controls.dispose();
     }
 
     handleWindowResize= () => {
-        const width = innerWidth;
-        const height = innerHeight;
+        const width = this.el.clientWidth;
+        const height = this.el.clientHeight;
 
         this.renderer.setSize(width, height);
         this.camera.aspect = width / height;
@@ -41,33 +53,29 @@ export class Engine {
     //<---------------------------Scene---------------------------->
 
     setScene = () => {
-        const width = innerWidth;
-        const height = innerHeight;
+        const width = this.el.clientWidth;
+        const height = this.el.clientHeight;
 
         this.scene = new THREE.Scene();
-
+        
         this.setCamera(width, height);
 
-        this.renderer = new THREE.WebGLRenderer(
-            {
-              antialias: true
-            }
-        );
+        this.renderer = new THREE.WebGLRenderer({
+            antialias: true,
+        });
 
         this.renderer.setSize(width, height);
         this.renderer.setPixelRatio(window.devicePixelRatio);
-
-        document.body.appendChild(renderer.domElement);
     }
 
     setCamera = (width, height) => {
-        var NEAR = 1e-6, FAR = 1e27;
-
+        const NEAR = 1e-6, FAR = 1e27;
         this.camera = new THREE.PerspectiveCamera(75, width/height, NEAR, FAR);
-        this.controls = new OrbitControls(camera, renderer.domElement);
+        this.controls = new OrbitControls(this.camera, this.el);
         this.controls.minDistance = earthRadius + 1
-        this.controls.addEventListener('change', () => this.render());
-        this.camera.position.z = 15000
+        this.controls.addEventListener('change', this.render);
+        this.camera.position.z = 15000;
+        this.camera.position.x = 15000;
         this.camera.lookAt(0,0,0);
     }
 
@@ -81,14 +89,19 @@ export class Engine {
         this.scene.add(ambient);
     }
 
-    addObjects = () => {
+    /*addObjects = () => {
         this.addEarth();
     }
-
+*/
     render = () => {
-        renderer.render(this.scene, this.camera);
-    }
+        console.log('Rendering scene...');
+        console.log('Renderer:', this.renderer);
+        console.log('Scene:', this.scene);
+        console.log('Camera:', this.camera);
 
+        this.renderer.render(this.scene, this.camera);
+    }
+/*
     //<---------------------------Scene_Contents---------------------------->
 
 
@@ -170,12 +183,13 @@ export class Engine {
     //}
 
     //<---------------------------Scene_Action---------------------------->
-
+/*
     updateEarthRotation = (date) => {
         const gst = satellite.gstime(date)
         this.earthMesh.setRotationFromEuler(new THREE.Euler(0, gst, 0));
 
         this.render();
     }
+    */
 
 }
