@@ -5,6 +5,7 @@ import * as satellite from 'satellite.js/lib/index';
 import earthMap from './assets/2_no_clouds_8k.jpg'
 import earthBumpMap from './assets/elev_bump_8k.jpg'
 import earthSpecularMap from './assets/water_8k.png'
+import cloudMap from './assets/fair_clouds_4k.png'
 import vertexShader from './shaders/vertex.glsl'
 import fragmentShader from './shaders/fragment.glsl'
 
@@ -13,6 +14,7 @@ const minutesPerDay = 1440
 
 export class Engine {
 
+    // EarthRadius = 6378.135km 
     satellites = [];
     el = null;
 
@@ -67,18 +69,18 @@ export class Engine {
     }
 
     setCamera = (width, height) => {
-        const NEAR = 1e-6, FAR = 1e27;
+        const NEAR = 1e-6, FAR = 1e100;
         this.camera = new THREE.PerspectiveCamera(75, this.width/this.height, NEAR, FAR);
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-        //this.controls.minDistance = earthRadius + 1
-        this.camera.position.z = 5;
-        this.camera.position.x = 5;
+        this.controls.minDistance = earthRadius + 1
+        this.camera.position.z = earthRadius * 2;
+        this.camera.position.x = earthRadius * 2;
         this.camera.lookAt(0,0,0);
     }
 
     setLights = () => {
         const sun = new THREE.DirectionalLight(0xffffff, 3);
-        sun.position.set(0, 59333894, -137112541);
+        sun.position.set(1, 1, 1);
 
         const ambient = new THREE.AmbientLight(0x151515);
         
@@ -88,17 +90,12 @@ export class Engine {
 
     addObjects = () => {
         this.addEarth();
-        /*const geometry = new THREE.BoxGeometry();
-        const material = new THREE.MeshPhongMaterial( { color: 0x00ff00} );
-        this.cube = new THREE.Mesh( geometry, material );
-        this.scene.add( this.cube );
-        */
     }
 
     render = () => {
         requestAnimationFrame(this.render)
-        //this.cube.rotation.x += 0.01;
-        //this.cube.rotation.y += 0.01;
+        this.earthMesh.applyQuaternion(this.earthQuaternion);
+        this.earthCloudMesh.applyQuaternion(this.cloudQuaternion);
         this.renderer.render(this.scene, this.camera);
     }
 
@@ -108,16 +105,15 @@ export class Engine {
     addEarth = () => {
 
         var axisTilt = 23.4 * (Math.PI / 180) // tilt in radians
-        let axis = new THREE.Vector3( Math.sin( axisTilt ), Math.cos( axisTilt ), 0 ).normalize()
-        var earthQuaternion = new THREE.Quaternion(), cloudQuaternion = new THREE.Quaternion()
-        var earth_speed = 0.005 * (Math.PI / 180)
-        var cloud_speed = 0.007 * (Math.PI / 180)
+        var axis = new THREE.Vector3( Math.sin( axisTilt ), Math.cos( axisTilt ), 0 ).normalize()
+        this.earthQuaternion = new THREE.Quaternion()
+        // Speed = _ * pi/180
+        var earthSpeed = 0.005 * (Math.PI / 180)
 
         const textureLoad = new THREE.TextureLoader();
-
         const group = new THREE.Group();
 
-        const geometry = new THREE.SphereGeometry(1, 50, 50);
+        const geometry = new THREE.SphereGeometry(earthRadius, 50, 50);
         const material = new THREE.MeshPhongMaterial({
             map: textureLoad.load(earthMap),
             bumpMap: textureLoad.load(earthBumpMap),
@@ -127,36 +123,31 @@ export class Engine {
             shininess: 25
         })
         this.earthMesh = new THREE.Mesh(geometry, material);
-
-        //earthQuaternion.setFromAxisAngle(axis, earth_speed)
-        //cloudQuaternion.setFromAxisAngle(axis, cloud_speed)
-
-        
-
-        //this.addEarthClouds();
+        this.earthQuaternion.setFromAxisAngle(axis, earthSpeed)
+        this.addEarthClouds(textureLoad, axis);
         //this.addEarthAtmosphere();
 
-        //this.earthMesh.applyQuaternion(earthQuaternion);
-        //this.earthCloudMesh.applyQuaternion(cloudQuaternion);
-
         group.add(this.earthMesh);
-        //group.add(this.earthCloudMesh);
+        group.add(this.earthCloudMesh);
         //group.add(this.atmosphereMesh);
 
         this.earth = group;
         this.scene.add(this.earth);
     }
-/*
-    addEarthClouds = (textureLoad) => {
+
+    addEarthClouds = (textureLoader, axis) => {
+        var cloudSpeed = 0.007 * (Math.PI / 180)
+        this.cloudQuaternion = new THREE.Quaternion()
+        this.cloudQuaternion.setFromAxisAngle(axis, cloudSpeed)
+
         let geometry = new THREE.SphereGeometry(earthRadius + 0.001, 50, 50);
         let material = new THREE.MeshPhongMaterial({
-            map: textureLoad.load('./images/fair_clouds_4k.png'),
+            map: textureLoader.load(cloudMap),
             transparent: true
         })
-
         this.earthCloudMesh = new THREE.Mesh(geometry, material);
     }
-
+/*
     addEarthAtmosphere = () => {
         let shader = new THREE.ShaderMaterial({
             uniforms: {
@@ -187,8 +178,6 @@ export class Engine {
     updateEarthRotation = (date) => {
         const gst = satellite.gstime(date)
         this.earthMesh.setRotationFromEuler(new THREE.Euler(0, gst, 0));
-
-        this.render();
     }
 
 }
