@@ -21,9 +21,11 @@ export class Engine {
     initialise(container, options = {}) {
         this.el = container;
         this.raycaster = new THREE.Raycaster();
+        this.width = window.innerWidth;
+        this.height = window.innerHeight;
         this.setScene();
-        //this.setLights();
-        //this.addObjects();
+        this.setLights();
+        this.addObjects();
 
         this.render();
 
@@ -40,11 +42,8 @@ export class Engine {
     }
 
     handleWindowResize= () => {
-        const width = this.el.clientWidth;
-        const height = this.el.clientHeight;
-
-        this.renderer.setSize(width, height);
-        this.camera.aspect = width / height;
+        this.renderer.setSize(this.width, this.height);
+        this.camera.aspect = this.width / this.height;
         this.camera.updateProjectionMatrix();
 
         this.render();
@@ -53,29 +52,27 @@ export class Engine {
     //<---------------------------Scene---------------------------->
 
     setScene = () => {
-        const width = this.el.clientWidth;
-        const height = this.el.clientHeight;
-
         this.scene = new THREE.Scene();
         
-        this.setCamera(width, height);
-
         this.renderer = new THREE.WebGLRenderer({
             antialias: true,
         });
 
-        this.renderer.setSize(width, height);
+        this.setCamera();
+
+        this.renderer.setSize(this.width, this.height);
         this.renderer.setPixelRatio(window.devicePixelRatio);
+        this.renderer.setClearColor(new THREE.Color(0x000000));
+        document.body.appendChild(this.renderer.domElement)
     }
 
     setCamera = (width, height) => {
         const NEAR = 1e-6, FAR = 1e27;
-        this.camera = new THREE.PerspectiveCamera(75, width/height, NEAR, FAR);
-        this.controls = new OrbitControls(this.camera, this.el);
-        this.controls.minDistance = earthRadius + 1
-        this.controls.addEventListener('change', this.render);
-        this.camera.position.z = 15000;
-        this.camera.position.x = 15000;
+        this.camera = new THREE.PerspectiveCamera(75, this.width/this.height, NEAR, FAR);
+        this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+        //this.controls.minDistance = earthRadius + 1
+        this.camera.position.z = 5;
+        this.camera.position.x = 5;
         this.camera.lookAt(0,0,0);
     }
 
@@ -89,19 +86,22 @@ export class Engine {
         this.scene.add(ambient);
     }
 
-    /*addObjects = () => {
+    addObjects = () => {
         this.addEarth();
+        /*const geometry = new THREE.BoxGeometry();
+        const material = new THREE.MeshPhongMaterial( { color: 0x00ff00} );
+        this.cube = new THREE.Mesh( geometry, material );
+        this.scene.add( this.cube );
+        */
     }
-*/
-    render = () => {
-        console.log('Rendering scene...');
-        console.log('Renderer:', this.renderer);
-        console.log('Scene:', this.scene);
-        console.log('Camera:', this.camera);
 
+    render = () => {
+        requestAnimationFrame(this.render)
+        //this.cube.rotation.x += 0.01;
+        //this.cube.rotation.y += 0.01;
         this.renderer.render(this.scene, this.camera);
     }
-/*
+
     //<---------------------------Scene_Contents---------------------------->
 
 
@@ -109,7 +109,7 @@ export class Engine {
 
         var axisTilt = 23.4 * (Math.PI / 180) // tilt in radians
         let axis = new THREE.Vector3( Math.sin( axisTilt ), Math.cos( axisTilt ), 0 ).normalize()
-        let earthQuaternion, cloudQuaternion = new THREE.Quaternion()
+        var earthQuaternion = new THREE.Quaternion(), cloudQuaternion = new THREE.Quaternion()
         var earth_speed = 0.005 * (Math.PI / 180)
         var cloud_speed = 0.007 * (Math.PI / 180)
 
@@ -117,20 +117,20 @@ export class Engine {
 
         const group = new THREE.Group();
 
-        let geometry = new THREE.SphereGeometry(earthRadius, 50, 50);
-        let material = new THREE.MeshPhongMaterial({
-            map: textureLoad.load('./images/2_no_clouds_8k.jpg'),
-            bumpMap: textureLoad.load('./images/elev_bump_8k.jpg'),
+        const geometry = new THREE.SphereGeometry(1, 50, 50);
+        const material = new THREE.MeshPhongMaterial({
+            map: textureLoad.load(earthMap),
+            bumpMap: textureLoad.load(earthBumpMap),
             bumpScale: 1,
-            specularMap: textureLoad.load('./images/water_8k.png'),
+            specularMap: textureLoad.load(earthSpecularMap),
             specular: new THREE.Color(0x804f00),
             shininess: 25
         })
+        this.earthMesh = new THREE.Mesh(geometry, material);
 
         //earthQuaternion.setFromAxisAngle(axis, earth_speed)
         //cloudQuaternion.setFromAxisAngle(axis, cloud_speed)
 
-        this.earthMesh = new THREE.Mesh(geometry, material);
         
 
         //this.addEarthClouds();
@@ -183,13 +183,12 @@ export class Engine {
     //}
 
     //<---------------------------Scene_Action---------------------------->
-/*
+
     updateEarthRotation = (date) => {
         const gst = satellite.gstime(date)
         this.earthMesh.setRotationFromEuler(new THREE.Euler(0, gst, 0));
 
         this.render();
     }
-    */
 
 }

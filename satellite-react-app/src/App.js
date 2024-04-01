@@ -14,6 +14,7 @@ class App extends React.Component{
     componentDidMount() {
         this.engine = new Engine();
         this.engine.initialise(this.el);
+        this.engine.updateEarthRotation(new Date())
     }
 
     componentWillUnmount() {
