@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import * as Telemetry from './telemetry';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { earthRadius } from "satellite.js/lib/constants";
 import * as satellite from 'satellite.js/lib/index';
@@ -15,7 +16,7 @@ const minutesPerDay = 1440
 export class Engine {
 
     // EarthRadius = 6378.135km 
-    satellites = [];
+    stations = [];
     el = null;
 
     //<---------------------------Initialise---------------------------->
@@ -80,9 +81,9 @@ export class Engine {
 
     setLights = () => {
         const sun = new THREE.DirectionalLight(0xffffff, 3);
-        sun.position.set(1, 1, 1);
+        sun.position.set(0, 59333894, -137112541);
 
-        const ambient = new THREE.AmbientLight(0x151515);
+        const ambient = new THREE.AmbientLight(0x363636);
         
         this.scene.add(sun);
         this.scene.add(ambient);
@@ -124,7 +125,7 @@ export class Engine {
         })
         this.earthMesh = new THREE.Mesh(geometry, material);
         this.earthQuaternion.setFromAxisAngle(axis, earthSpeed)
-        this.addEarthClouds(textureLoad, axis);
+        this.getEarthCloud(textureLoad, axis);
         //this.addEarthAtmosphere();
 
         group.add(this.earthMesh);
@@ -135,7 +136,7 @@ export class Engine {
         this.scene.add(this.earth);
     }
 
-    addEarthClouds = (textureLoader, axis) => {
+    getEarthCloud = (textureLoader, axis) => {
         var cloudSpeed = 0.007 * (Math.PI / 180)
         this.cloudQuaternion = new THREE.Quaternion()
         this.cloudQuaternion.setFromAxisAngle(axis, cloudSpeed)
@@ -169,9 +170,35 @@ export class Engine {
     }
     */
 
-    //addSatellite = () => {
+    addSatellite = (station, color, size) => {
+        const sat = this.getSatellite(color, size);
+        const pos = this.getSatellitePosition(station, new Date());
+        //sat.position.set(pos.x, pos.y, pos.z);
+        sat.position.set(3929.162022999146,-5210.421723232135,1728.8004514805887)
+        station.mesh = sat;
+        console.log(sat)
+        this.stations.push(station);
+        this.earth.add(sat);
+        this.render();
+    }
 
-    //}
+    getSatellite = (color, size) => {
+        // Input or default
+        color = color || 0xFFFFFF;
+        size = size || 50;
+
+        let geometry = new THREE.SphereGeometry(25, 50, 50);
+        let material = new THREE.MeshBasicMaterial({
+            color: color,
+            transparent: false
+        })
+        return new THREE.Mesh(geometry, material);
+    }
+
+    getSatellitePosition = (station, date) => {
+        date = date || new Date();
+        return Telemetry.getPositionFromTle(station);
+    }
 
     //<---------------------------Scene_Action---------------------------->
 
