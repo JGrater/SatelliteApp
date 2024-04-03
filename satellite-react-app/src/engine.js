@@ -17,12 +17,14 @@ export class Engine {
 
     // EarthRadius = 6378.135km 
     stations = [];
+    referenceFrame = 1;
     el = null;
 
     //<---------------------------Initialise---------------------------->
 
     initialise(container, options = {}) {
         this.el = container;
+        console.log(this.el)
         this.raycaster = new THREE.Raycaster();
         this.width = window.innerWidth;
         this.height = window.innerHeight;
@@ -52,12 +54,17 @@ export class Engine {
         this.render();
     }
 
+    setReferenceFrame = (type) => {
+        this.referenceFrame = type;
+    }
+
     //<---------------------------Scene---------------------------->
 
     setScene = () => {
         this.scene = new THREE.Scene();
         
         this.renderer = new THREE.WebGLRenderer({
+            logarithmicDepthBuffer: true,
             antialias: true,
         });
 
@@ -66,13 +73,15 @@ export class Engine {
         this.renderer.setSize(this.width, this.height);
         this.renderer.setPixelRatio(window.devicePixelRatio);
         this.renderer.setClearColor(new THREE.Color(0x000000));
-        document.body.appendChild(this.renderer.domElement)
+        this.el.appendChild(this.renderer.domElement)
     }
 
-    setCamera = (width, height) => {
+    setCamera = () => {
         const NEAR = 1e-6, FAR = 1e100;
-        this.camera = new THREE.PerspectiveCamera(75, this.width/this.height, NEAR, FAR);
-        this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+        this.camera = new THREE.PerspectiveCamera(54, this.width/this.height, NEAR, FAR);
+        this.controls = new OrbitControls(this.camera, this.el);
+        this.controls.enablePan = false;
+        this.controls.addEventListener('change', () => this.render())
         this.controls.minDistance = earthRadius + 1
         this.camera.position.z = earthRadius * 2;
         this.camera.position.x = earthRadius * 2;
@@ -81,8 +90,8 @@ export class Engine {
 
     setLights = () => {
         const sun = new THREE.DirectionalLight(0xffffff, 3);
-        sun.position.set(0, 59333894, -137112541);
-
+        //sun.position.set(0, 59333894, -137112541);
+        sun.position.set(0, 0, -149400000);
         const ambient = new THREE.AmbientLight(0x363636);
         
         this.scene.add(sun);
@@ -94,9 +103,9 @@ export class Engine {
     }
 
     render = () => {
-        requestAnimationFrame(this.render)
-        this.earthMesh.applyQuaternion(this.earthQuaternion);
-        this.earthCloudMesh.applyQuaternion(this.cloudQuaternion);
+        //requestAnimationFrame(this.render)
+        //this.earthMesh.applyQuaternion(this.earthQuaternion);
+        //this.earthCloudMesh.applyQuaternion(this.cloudQuaternion);
         this.renderer.render(this.scene, this.camera);
     }
 
@@ -104,7 +113,6 @@ export class Engine {
 
 
     addEarth = () => {
-
         var axisTilt = 23.4 * (Math.PI / 180) // tilt in radians
         var axis = new THREE.Vector3( Math.sin( axisTilt ), Math.cos( axisTilt ), 0 ).normalize()
         this.earthQuaternion = new THREE.Quaternion()
@@ -124,7 +132,7 @@ export class Engine {
             shininess: 25
         })
         this.earthMesh = new THREE.Mesh(geometry, material);
-        this.earthQuaternion.setFromAxisAngle(axis, earthSpeed)
+        //this.earthQuaternion.setFromAxisAngle(axis, earthSpeed)
         this.getEarthCloud(textureLoad, axis);
         //this.addEarthAtmosphere();
 
@@ -141,7 +149,7 @@ export class Engine {
         this.cloudQuaternion = new THREE.Quaternion()
         this.cloudQuaternion.setFromAxisAngle(axis, cloudSpeed)
 
-        let geometry = new THREE.SphereGeometry(earthRadius + 0.001, 50, 50);
+        let geometry = new THREE.SphereGeometry(earthRadius + 20, 50, 50);
         let material = new THREE.MeshPhongMaterial({
             map: textureLoader.load(cloudMap),
             transparent: true
@@ -173,10 +181,9 @@ export class Engine {
     addSatellite = (station, color, size) => {
         const sat = this.getSatellite(color, size);
         const pos = this.getSatellitePosition(station, new Date());
-        //sat.position.set(pos.x, pos.y, pos.z);
-        sat.position.set(3929.162022999146,-5210.421723232135,1728.8004514805887)
+        sat.position.set(pos.x, pos.y, pos.z);
         station.mesh = sat;
-        console.log(sat)
+
         this.stations.push(station);
         this.earth.add(sat);
         this.render();
@@ -190,21 +197,48 @@ export class Engine {
         let geometry = new THREE.SphereGeometry(25, 50, 50);
         let material = new THREE.MeshBasicMaterial({
             color: color,
-            transparent: false
+            transparent: false,
+            depthTest: true
         })
         return new THREE.Mesh(geometry, material);
     }
 
     getSatellitePosition = (station, date) => {
         date = date || new Date();
-        return Telemetry.getPositionFromTle(station);
+        return Telemetry.getPositionFromTle(station, date, this.referenceFrame);
     }
 
     //<---------------------------Scene_Action---------------------------->
 
+    updateScene = (date) => {
+        if (!this.stations) return;
+
+        this.stations.forEach(station => {
+            this.updateSatellitePosition(station, date);
+        });
+
+        if (this.referenceFrame === 2) {
+            this.updateEarthRotation(date);
+        }
+        else {
+            this.render();
+        }
+    }
+
+    updateSatellitePosition = (station, date) => {
+        //date = date || TargetDate;
+
+        const pos = Telemetry.getPositionFromTle(station, date, this.referenceFrame);
+        if (!pos) return;
+
+        station.mesh.position.set(pos.x, pos.y, pos.z);
+    }
+
     updateEarthRotation = (date) => {
         const gst = satellite.gstime(date)
         this.earthMesh.setRotationFromEuler(new THREE.Euler(0, gst, 0));
+
+        this.render();
     }
 
 }

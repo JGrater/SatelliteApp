@@ -8,18 +8,43 @@ class App extends React.Component{
         selected: [],
         stations: [], 
         initialDate: new Date().getTime(),
-        currentDate: new Date().getTime(), 
+        currentDate: new Date().getTime(),
+        referenceFrame: 1
     }
 
     componentDidMount() {
         this.engine = new Engine();
+        this.engine.referenceFrame = this.state.referenceFrame;
         this.engine.initialise(this.el);
-        this.engine.updateEarthRotation(new Date());
         this.addSatellites();
+        
+        this.engine.updateScene(new Date());
+
+        setInterval(this.handleTimer, 1000);
     }
 
     componentWillUnmount() {
         this.engine.dispose();
+    }
+
+    handleTimer = () => {
+        // By default, update in realtime every second, unless dateSlider is displayed.
+        this.handleDateChange(null, new Date());
+    }
+
+    handleDateChange = (v, d) => {
+        const newDate = v ? v.target.value : d;
+        this.setState({ currentDate: newDate });
+
+        const date = new Date();
+        date.setTime(newDate);
+        this.engine.updateScene(date);
+    }
+
+    handleReferenceFrameChange = () => {
+        const newType = this.state.referenceFrame === 1 ? 2 : 1;
+        this.setState({referenceFrame: newType});
+        this.engine.setReferenceFrame(newType);
     }
 
     addSatellites() {
@@ -35,7 +60,7 @@ class App extends React.Component{
 
         return (
             <div>
-                <div ref={c => (this.el = c)} style={{ width: '99%', height: '99%' }} />
+                <div ref={c => this.el = c} style={{ width: '99%', height: '99%' }} />
             </div>
         )
     }

@@ -5,21 +5,27 @@ const toThree = (v) => {
 }
 
 const getPropagation = (station, date) => {    
-    station.satrec = satellite.twoline2satrec(station.tleLine1, station.tleLine2);
-    return satellite.propagate(station.satrec, date)
+    try {
+        station.satrec = satellite.twoline2satrec(station.tleLine1, station.tleLine2);
+        return satellite.propagate(station.satrec, date);
+    } catch (error) {
+        console.error('Error propagating satellite position:', error);
+        return null;
+    }
 }
 
 // type: 1 ECEF coordinates   2: ECI coordinates
 export const getPositionFromTle = (station, date, type = 1) => {
-    //if (!station || !date) return null;
-    const positionVelocity = getPropagation(station, date);
+    if (!station || !date) return null;
 
+    const positionVelocity = getPropagation(station, date);
+    if (!positionVelocity || isNaN(positionVelocity.position.x) || isNaN(positionVelocity.position.y) || isNaN(positionVelocity.position.z)) {
+        console.error("Invalid position data or NaN values.");
+        return null;
+    }
+    
     const gmst = satellite.gstime(date);
     const positionEcf = satellite.eciToEcf(positionVelocity.position, gmst);
-    console.log(positionEcf.x)
-    console.log(positionEcf.y)
-    console.log(positionEcf.z)
-
     return toThree(positionEcf);
 }
 /*
