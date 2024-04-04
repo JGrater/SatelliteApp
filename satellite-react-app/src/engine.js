@@ -3,12 +3,10 @@ import * as Telemetry from './telemetry';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { earthRadius } from "satellite.js/lib/constants";
 import * as satellite from 'satellite.js/lib/index';
-import earthMap from './assets/2_no_clouds_8k.jpg'
-import earthBumpMap from './assets/elev_bump_8k.jpg'
-import earthSpecularMap from './assets/water_8k.png'
-import cloudMap from './assets/fair_clouds_4k.png'
-import vertexShader from './shaders/vertex.glsl'
-import fragmentShader from './shaders/fragment.glsl'
+import earthMap from './assets/Earth/2_no_clouds_16k.jpg'
+import earthBumpMap from './assets/Earth/elev_bump_16k.jpg'
+import earthSeaMap from './assets/Earth/water_16k.png'
+import cloudMap from './assets/Earth/fair_clouds_4k.png'
 
 const satelliteSize = 50;
 const minutesPerDay = 1440
@@ -119,21 +117,38 @@ export class Engine {
         // Speed = _ * pi/180
         var earthSpeed = 0.005 * (Math.PI / 180)
 
-        const textureLoad = new THREE.TextureLoader();
+        const textureLoader = new THREE.TextureLoader();
         const group = new THREE.Group();
 
         const geometry = new THREE.SphereGeometry(earthRadius, 50, 50);
-        const material = new THREE.MeshPhongMaterial({
-            map: textureLoad.load(earthMap),
-            bumpMap: textureLoad.load(earthBumpMap),
+        geometry.clearGroups();
+        geometry.addGroup( 0, Infinity, 0 );
+        geometry.addGroup( 0, Infinity, 1 );
+
+        const land_material = new THREE.MeshPhongMaterial({
+            map: textureLoader.load(earthMap),
+            bumpMap: textureLoader.load(earthBumpMap),
             bumpScale: 1,
-            specularMap: textureLoad.load(earthSpecularMap),
-            specular: new THREE.Color(0x804f00),
-            shininess: 25
+            shininess: 25,
+            color: new THREE.Color(0xCCCCCC)
         })
-        this.earthMesh = new THREE.Mesh(geometry, material);
+        const sea_material = new THREE.MeshPhongMaterial({
+            specularMap: textureLoader.load(earthSeaMap),
+            specular: new THREE.Color(0x7a5c2b),
+            alphaMap: textureLoader.load(earthSeaMap),
+            shininess: 25,
+            color: new THREE.Color(0x156289),
+            transparent: true,
+        })
+
+        var materials = [
+            land_material,
+            sea_material
+        ]
+
+        this.earthMesh = new THREE.Mesh(geometry, materials);
         //this.earthQuaternion.setFromAxisAngle(axis, earthSpeed)
-        this.getEarthCloud(textureLoad, axis);
+        this.getEarthCloud(textureLoader, axis);
         //this.addEarthAtmosphere();
 
         group.add(this.earthMesh);
