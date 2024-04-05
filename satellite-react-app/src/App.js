@@ -15,7 +15,9 @@ class App extends React.Component{
     componentDidMount() {
         this.engine = new Engine();
         this.engine.referenceFrame = this.state.referenceFrame;
-        this.engine.initialise(this.el);
+        this.engine.initialise(this.el, {
+            onStationClicked: this.handleStationClicked
+        });
         this.addSatellites();
         
         this.engine.updateScene(new Date());
@@ -42,9 +44,53 @@ class App extends React.Component{
     }
 
     handleReferenceFrameChange = () => {
+        this.state.selected.forEach(s => this.engine.removeOrbit(s));
+
         const newType = this.state.referenceFrame === 1 ? 2 : 1;
         this.setState({referenceFrame: newType});
         this.engine.setReferenceFrame(newType);
+    }
+
+    handleRemoveSelected = (station) => {
+        if (!station) return;
+        
+        this.deselectStation(station);
+    }
+
+    handleRemoveAllSelected = () => {
+        this.state.selected.forEach(s => this.engine.removeOrbit(s));
+        this.setState({selected: []});
+    }
+
+    handleStationClicked = (station) => {
+        if (!station) return;
+
+        this.toggleSelection(station);
+    }
+
+    toggleSelection(station) {
+        if (this.isSelected(station))
+            this.deselectStation(station);
+        else
+            this.selectStation(station);
+    }
+
+    isSelected = (station) => {
+        return this.state.selected.includes(station);
+    }
+
+    selectStation = (station) => {
+        const newSelected = this.state.selected.concat(station);
+        this.setState({selected: newSelected});
+
+        this.engine.addOrbit(station);
+    }
+
+    deselectStation = (station) => {
+        const newSelected = this.state.selected.filter(s => s !== station);
+        this.setState( { selected: newSelected } );
+
+        this.engine.removeOrbit(station);
     }
 
     addSatellites() {

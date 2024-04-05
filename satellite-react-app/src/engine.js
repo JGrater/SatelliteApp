@@ -9,8 +9,14 @@ import earthBumpMap from './assets/Earth/elev_bump_16k.jpg'
 import earthSeaMap from './assets/Earth/water_16k.png'
 import cloudMap from './assets/Earth/africa_clouds_8k.png'
 
-const satelliteSize = 50;
+const satelliteSize = 30;
 const minutesPerDay = 1440
+const MinutesPerDay = 1440;
+const ixpdotp = MinutesPerDay / (2.0 * 3.141592654) ;
+
+const defaultOptions = {
+    onStationClicked: null
+}
 
 export class Engine {
 
@@ -34,15 +40,38 @@ export class Engine {
         this.render();
 
         window.addEventListener('resize', this.handleWindowResize)
+        window.addEventListener('pointerdown', this.handleMouseDown);
     }
 
     dispose() {
         window.removeEventListener('resize', this.handleWindowResize);
+        window.removeEventListener('pointerdown', this.handleMouseDown);
 
         this.raycaster = null;
         this.el = null;
 
         this.controls.dispose();
+    }
+
+    handleMouseDown = (e) => {
+        const mouse = new THREE.Vector2(
+            (e.clientX / this.el.clientWidth) * 2 - 1,
+            -(e.clientY / this.el.clientHeight) * 2 + 1
+        );
+        this.raycaster.setFromCamera(mouse, this.camera);
+
+        let station = null;
+
+        var intersects = this.raycaster.intersectObjects(this.scene.children, true);
+        if (intersects && intersects.length > 0) {
+            const picked = intersects[0].object;
+            if (picked) {
+                station = this.findStationInScene(picked);
+                if (station) {
+                    this.addOrbit(station)
+                }
+            }
+        }
     }
 
     handleWindowResize= () => {
@@ -141,8 +170,10 @@ export class Engine {
         ]
 
         this.earthMesh = new THREE.Mesh(geometry, materials);
+
         this.earthCloudMesh = this.getEarthCloud(textureLoader);
         this.earthCloudMesh.scale.setScalar(1.003)
+
         this.earthAtmosphereMesh = this.getEarthAtmosphere();
         this.earthAtmosphereMesh.scale.setScalar(1.015)
 
@@ -172,13 +203,62 @@ export class Engine {
         return new THREE.Mesh( geometry, Shaders.getAtmosphereShader() )
     }
 
+    addOrbit = (station) => {
+        if (station.orbitMinutes > 0) return;
+
+        const revsPerDay = station.satrec.no * ixpdotp;
+        const intervalMinutes = 1;
+        const minutes = station.orbitMinutes || MinutesPerDay / revsPerDay;
+        const initialDate = new Date();
+
+        if (!this.orbitMaterial) {
+            this.orbitMaterial = new THREE.LineBasicMaterial({
+                color: 0xffff00,
+                opacity: 1.0,
+                transparent: true
+            });
+        }
+
+        var points = [];
+
+        for (var i = 0; i <= minutes; i += intervalMinutes) {
+            const date = new Date(initialDate.getTime() + i * 60000);
+
+            const pos = Telemetry.getPositionFromTle(station, date, this.referenceFrame);
+            if (!pos) continue;
+
+            points.push(new THREE.Vector3(pos.x, pos.y, pos.z));
+        }
+        const geometry = new THREE.BufferGeometry().setFromPoints(points);
+        var orbitCurve = new THREE.Line(geometry, this.orbitMaterial);
+        station.orbit = orbitCurve;
+        // station.mesh.material = this.stationMaterial.secolor(0x00FF00)
+
+        this.earth.add(orbitCurve);
+        this.render();
+    }
+
+    removeOrbit = (station) => {
+        if (!station || !station.orbit) return;
+
+        this.earth.remove(station.orbit);
+        station.orbit.geometry.dispose();
+        station.orbit = null;
+        station.mesh.material = this.stationMaterial.color(0xFF0000);
+    }
+
     addSatellite = (station, color, size) => {
+        const SpriteScaleFactor = 5000;
         const sat = this.getSatellite(color, size);
         const pos = this.getSatellitePosition(station, new Date());
         sat.position.set(pos.x, pos.y, pos.z);
+        sat.scale.set(1, 1, 1);
         station.mesh = sat;
 
         this.stations.push(station);
+
+        if (station.orbitMinutes > 0) this.addOrbit(station);
+
         this.earth.add(sat);
         this.render();
     }
@@ -186,15 +266,15 @@ export class Engine {
     getSatellite = (color, size) => {
         // Input or default
         color = color || 0xFF0000;
-        size = size || 50;
+        size = size || satelliteSize;
 
         let geometry = new THREE.SphereGeometry(25, 50, 50);
-        let material = new THREE.MeshBasicMaterial({
+        this.stationMaterial = new THREE.MeshBasicMaterial({
             color: color,
             transparent: false,
             depthTest: true
         })
-        return new THREE.Mesh(geometry, material);
+        return new THREE.Mesh(geometry, this.stationMaterial);
     }
 
     getSatellitePosition = (station, date) => {
@@ -233,6 +313,14 @@ export class Engine {
         this.earthMesh.setRotationFromEuler(new THREE.Euler(0, gst, 0));
 
         this.render();
+    }
+
+    findStationInScene = (threeObject) => {
+        for (var i = 0; i < this.stations.length; i++) {
+            const s = this.stations[i];
+            if (s.mesh === threeObject) return s;
+        }
+        return null;
     }
 
     degreesToRadians = (degrees) => {
