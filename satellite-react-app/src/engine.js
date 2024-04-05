@@ -1,12 +1,13 @@
 import * as THREE from 'three'
 import * as Telemetry from './telemetry';
+import * as Shaders from './shaders';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { earthRadius } from "satellite.js/lib/constants";
 import * as satellite from 'satellite.js/lib/index';
 import earthMap from './assets/Earth/2_no_clouds_16k.jpg'
 import earthBumpMap from './assets/Earth/elev_bump_16k.jpg'
 import earthSeaMap from './assets/Earth/water_16k.png'
-import cloudMap from './assets/Earth/fair_clouds_4k.png'
+import cloudMap from './assets/Earth/africa_clouds_8k.png'
 
 const satelliteSize = 50;
 const minutesPerDay = 1440
@@ -101,21 +102,14 @@ export class Engine {
     }
 
     render = () => {
-        //requestAnimationFrame(this.render)
-        //this.earthMesh.applyQuaternion(this.earthQuaternion);
-        //this.earthCloudMesh.applyQuaternion(this.cloudQuaternion);
         this.renderer.render(this.scene, this.camera);
     }
 
     //<---------------------------Scene_Contents---------------------------->
 
-
     addEarth = () => {
-        var axisTilt = 23.4 * (Math.PI / 180) // tilt in radians
-        var axis = new THREE.Vector3( Math.sin( axisTilt ), Math.cos( axisTilt ), 0 ).normalize()
-        this.earthQuaternion = new THREE.Quaternion()
-        // Speed = _ * pi/180
-        var earthSpeed = 0.005 * (Math.PI / 180)
+        var axisTilt = this.degreesToRadians(23.4)
+        var earthSpeed = this.degreesToRadians(0.005)
 
         const textureLoader = new THREE.TextureLoader();
         const group = new THREE.Group();
@@ -147,51 +141,36 @@ export class Engine {
         ]
 
         this.earthMesh = new THREE.Mesh(geometry, materials);
-        //this.earthQuaternion.setFromAxisAngle(axis, earthSpeed)
-        this.getEarthCloud(textureLoader, axis);
-        //this.addEarthAtmosphere();
+        this.earthCloudMesh = this.getEarthCloud(textureLoader);
+        this.earthCloudMesh.scale.setScalar(1.003)
+        this.earthAtmosphereMesh = this.getEarthAtmosphere();
+        this.earthAtmosphereMesh.scale.setScalar(1.015)
 
         group.add(this.earthMesh);
         group.add(this.earthCloudMesh);
-        //group.add(this.atmosphereMesh);
+        group.add(this.earthAtmosphereMesh);
+
+        group.rotation.z = axisTilt
 
         this.earth = group;
         this.scene.add(this.earth);
     }
 
-    getEarthCloud = (textureLoader, axis) => {
-        var cloudSpeed = 0.007 * (Math.PI / 180)
-        this.cloudQuaternion = new THREE.Quaternion()
-        this.cloudQuaternion.setFromAxisAngle(axis, cloudSpeed)
-
-        let geometry = new THREE.SphereGeometry(earthRadius + 20, 50, 50);
+    getEarthCloud = (textureLoader) => {
+        let geometry = new THREE.SphereGeometry(earthRadius, 50, 50);
         let material = new THREE.MeshPhongMaterial({
             map: textureLoader.load(cloudMap),
-            transparent: true
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            opacity: 0.8
         })
-        this.earthCloudMesh = new THREE.Mesh(geometry, material);
+        return new THREE.Mesh(geometry, material);
     }
-/*
-    addEarthAtmosphere = () => {
-        let shader = new THREE.ShaderMaterial({
-            uniforms: {
-              "c": { type: "f", value: 0.5 },
-              "p": { type: "f", value: 6 },
-              glowColor: { type: "c", value: new THREE.Color(0.2, 0.5, 0.9) },
-              viewVector: { type: "v3", value: camera.position }
-            },
-            vertexShader: vertexShader,
-              fragmentShader: fragmentShader,
-            side: THREE.BackSide,
-              blending: THREE.AdditiveBlending,
-              transparent: true
-          })
 
-        this.atmosphereMesh = new THREE.Mesh( new THREE.SphereGeometry(earthRadius-5.7, 32, 32), shader.clone() )
-        this.atmosphereMesh.position.set(0, 0, 0)
-        this.atmosphereMesh.scale.multiplyScalar(6.2);
+    getEarthAtmosphere = () => {
+        let geometry = new THREE.SphereGeometry(earthRadius, 50, 50);
+        return new THREE.Mesh( geometry, Shaders.getAtmosphereShader() )
     }
-    */
 
     addSatellite = (station, color, size) => {
         const sat = this.getSatellite(color, size);
@@ -206,7 +185,7 @@ export class Engine {
 
     getSatellite = (color, size) => {
         // Input or default
-        color = color || 0xFFFFFF;
+        color = color || 0xFF0000;
         size = size || 50;
 
         let geometry = new THREE.SphereGeometry(25, 50, 50);
@@ -254,6 +233,10 @@ export class Engine {
         this.earthMesh.setRotationFromEuler(new THREE.Euler(0, gst, 0));
 
         this.render();
+    }
+
+    degreesToRadians = (degrees) => {
+        return degrees * (Math.PI / 180)
     }
 
 }
