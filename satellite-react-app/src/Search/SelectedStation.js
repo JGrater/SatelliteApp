@@ -1,5 +1,5 @@
 import React from 'react';
-import { StationCard } from '../Search/SearchResults';
+import { StationCard } from './SearchResults';
 
 export default function({selected, onRemoveStation, onRemoveAll, onStationClick}) {
     if (!selected || selected.length === 0) return null;
