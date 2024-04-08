@@ -2,6 +2,7 @@ import React from "react";
 import "./assets/theme.css";
 import { Engine } from "./engine";
 import SelectedStation from "./Search/SelectedStation";
+import Info from "./Info";
 
 
 class App extends React.Component{
@@ -53,10 +54,8 @@ class App extends React.Component{
         this.engine.setReferenceFrame(newType);
     }
 
-    handleRemoveSelected = (station) => {
-        if (!station) return;
-        
-        this.deselectStation(station);
+    handleRemoveSelected = () => {        
+        this.deselectStation();
     }
 
     handleRemoveAllSelected = () => {
@@ -71,10 +70,10 @@ class App extends React.Component{
     }
 
     toggleSelection(station) {
-        if (this.isSelected(station))
-            this.deselectStation(station);
-        else
+        this.deselectStation();
+        if (!this.isSelected(station)) {
             this.selectStation(station);
+        }
     }
 
     isSelected = (station) => {
@@ -86,13 +85,14 @@ class App extends React.Component{
         this.setState({selected: newSelected});
 
         this.engine.addOrbit(station);
+        //this.engine.changeView()
     }
 
-    deselectStation = (station) => {
-        const newSelected = this.state.selected.filter(s => s !== station);
-        this.setState( { selected: newSelected } );
+    deselectStation = () => {
+        const currentSelected = this.state.selected[0];
+        this.setState( { selected: [] } );
 
-        this.engine.removeOrbit(station);
+        this.engine.removeOrbit(currentSelected);
     }
 
     addSatellites() {
@@ -100,7 +100,8 @@ class App extends React.Component{
             name: "ISS",
             tleLine1: '1 25544U 98067A   19156.50900463  .00003075  00000-0  59442-4 0  9992',
             tleLine2: '2 25544  51.6433  59.2583 0008217  16.4489 347.6017 15.51174618173442',
-         }
+        }
+        this.state.stations.push(ISS)
         this.engine.addSatellite(ISS, 0xFF0000, 50);
     }
 
@@ -109,7 +110,8 @@ class App extends React.Component{
 
         return (
             <div>
-                <SelectedStation selected={selected} onRemoveStation={this.handleRemoveSelected} onRemoveAll={this.handleRemoveAllSelected} />
+                <Info stations={stations} />
+                <SelectedStation selected={selected} onRemoveStation={this.handleRemoveSelected} />
                 <div ref={c => this.el = c} style={{ width: '99%', height: '99%' }} />
             </div>
         )

@@ -1,13 +1,11 @@
 import React from 'react';
 import { StationCard } from './SearchResults';
 
-export default function({selected, onRemoveStation, onRemoveAll, onStationClick}) {
+export default function({selected, onRemoveStation, onStationClick}) {
     if (!selected || selected.length === 0) return null;
 
     return (
         <div className='Selected'>
-            <h2>Selected</h2>
-            <p className='SmallButton' onClick={onRemoveAll}>Clear all</p>
             {selected.map((station, i) => {
                 return <StationCard 
                     station={station} 

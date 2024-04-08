@@ -31,17 +31,53 @@ h1 {
 .Result {
   margin: 3px 6px 3px 0;
   border: 1px solid rgba(102, 113, 136, 0.39);
-  border-left: 3px solid #ffbfa3;
+  border-left: 3px solid #26ff00;
   background-color: rgba(48, 67, 104, 0.5);
   border-top-right-radius: 10px;
+  border-bottom-right-radius: 10px;
   padding: 4px 10px;
-  width: 150px;
+  width: 175px;
   
   cursor: pointer;
   overflow: hidden;
   white-space: nowrap;
 }
 
+.ResultTitle {
+  text-transform: uppercase;
+  text-align:left;
+  vertical-align:text-top;
+  font-size:x-large;
+  line-height:auto;
+  border-style:hidden;
+  outline:none;
+  display: inline-block;
+  padding-top: 10px;
+}
+
+.ResultRow {
+  display: flex;
+}
+
+.ResultInfoTitle {
+  text-align:left;
+  vertical-align:text-top;
+  font-size:medium;
+  line-height:auto;
+  border-style:hidden;
+  outline:none;
+}
+
+.ResultInfo {
+  color:#26ff00;
+  text-align: right;
+  vertical-align:text-top;
+  font-size:medium;
+  line-height:auto;
+  border-style:hidden;
+  outline:none;
+  width:178px;
+}
 
 .RemoveButton {
   float: right;
@@ -74,8 +110,8 @@ h1 {
       
   .Selected {
       position: absolute;
-      right: 10px;
-      top: 40px;
+      right: 75px;
+      bottom: 40px;
       width: 120px;
   }
 

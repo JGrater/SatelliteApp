@@ -113,6 +113,8 @@ export class Engine {
         this.controls.enablePan = false;
         this.controls.addEventListener('change', () => this.render())
         this.controls.minDistance = earthRadius + 1
+        this.controls.enableDamping = true;
+        this.controls.dampingFactor = 0.12;
         this.camera.position.z = earthRadius * 2;
         this.camera.position.x = earthRadius * 2;
         this.camera.lookAt(0,0,0);
@@ -215,7 +217,7 @@ export class Engine {
 
         if (!this.orbitMaterial) {
             this.orbitMaterial = new THREE.LineBasicMaterial({
-                color: 0xffff00,
+                color: 0x00ff00,
                 opacity: 1.0,
                 transparent: true
             });
@@ -264,7 +266,7 @@ export class Engine {
 
     getSatellite = (color, size) => {
         // Input or default
-        color = color || 0xFF0000;
+        color = color || 0xFFFFFF;
         size = size || satelliteSize;
 
         let geometry = new THREE.SphereGeometry(25, 50, 50);
