@@ -89,20 +89,65 @@ class App extends React.Component{
     }
 
     deselectStation = () => {
-        const currentSelected = this.state.selected[0];
-        this.setState( { selected: [] } );
-
-        this.engine.removeOrbit(currentSelected);
+        this.state.selected.forEach(s => this.engine.removeOrbit(s));
+        this.setState({selected: []});
     }
 
     addSatellites() {
-        var ISS = { 
+        /*var ISS = { 
             name: "ISS",
             tleLine1: '1 25544U 98067A   24101.03904484  .00012558  00000-0  22725-3 0  9992',
             tleLine2:'2 25544  51.6391 293.2963 0004827  53.6203  54.5347 15.50046419447975'
         }
         this.state.stations.push(ISS)
-        this.engine.addSatellite(ISS, 0xFFFFFF, 50);
+        this.engine.addSatellite(ISS, 0xFFFFFF, 50);*/
+
+        this.fetchSatellites('https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=tle')
+            .then(stations => {
+                this.setState({stations});
+            })
+    }
+
+    fetchSatellites(url) {
+        return fetch(url).then(res => {
+            if (res.ok) {
+                return res.text().then(text => {
+                    const stations = this.parseTleFile(text)
+                    stations.forEach(s => {
+                        this.engine.addSatellite(s, 0xFFFFFF, 50)
+                    })
+                    this.engine.render();
+                    return stations;
+                })
+            }
+        })
+    }
+
+    parseTleFile(tleFile) {
+        const result = [];
+        const lines = tleFile.split("\n");
+        let current = null;
+
+        for (let i = 0; i < lines.length; ++i) {
+            const line = lines[i].trim();
+
+            if (line.length === 0) continue;
+
+            if (line[0] === '1') {
+                current.tleLine1 = line;
+            }
+            else if (line[0] === '2') {
+                current.tleLine2 = line;
+            }
+            else {
+                current = { 
+                    name: line, 
+                };
+                result.push(current);
+            }
+        }
+
+        return result;
     }
 
     render() {

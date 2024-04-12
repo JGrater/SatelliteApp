@@ -286,7 +286,6 @@ export class Engine {
         if (station.orbitMinutes > 0) this.addOrbit(station);
 
         this.earth.add(sat);
-        this.render();
     }
 
     setupSatelliteSprites = (color) => {
