@@ -8,11 +8,17 @@ import earthMap from './assets/Earth/2_no_clouds_16k.jpg'
 import earthBumpMap from './assets/Earth/elev_bump_16k.jpg'
 import earthSeaMap from './assets/Earth/water_16k.png'
 import cloudMap from './assets/Earth/africa_clouds_8k.png'
+import circle from './assets/circle.png'
 
 const satelliteSize = 50;
 const minutesPerDay = 1440
 const MinutesPerDay = 1440;
 const ixpdotp = MinutesPerDay / (2.0 * 3.141592654) ;
+const rotationRate = 360 / 86400;
+const spring = [3, 4, 5];
+const summer = [6, 7, 8];
+const autumn = [9, 10, 11];        
+const winter = [12, 0, 2];
 
 const defaultOptions = {
     onStationClicked: null
@@ -115,23 +121,28 @@ export class Engine {
         this.controls.minDistance = earthRadius + 1
         this.controls.enableDamping = true;
         this.controls.dampingFactor = 0.12;
-        this.camera.position.z = earthRadius * 2;
-        this.camera.position.x = earthRadius * 2;
+        this.camera.position.x -= earthRadius * 4;
         this.camera.lookAt(0,0,0);
     }
 
     setLights = () => {
-        const sun = new THREE.DirectionalLight(0xffffff, 3);
-        //sun.position.set(0, 59333894, -137112541);
-        sun.position.set(0, 0, -149400000);
+        let sun = new THREE.DirectionalLight(0xffffff, 3);
+        //sun.position.set(137112541, 59333894, 0);
+        //sun.position.set(0, 0, -149400000);
+        sun.position.set(-4,0,1)
         const ambient = new THREE.AmbientLight(0x363636);
-        
+        //const ambient = new THREE.AmbientLight(0xFFFFFF);
+
         this.scene.add(sun);
         this.scene.add(ambient);
     }
 
     addObjects = () => {
         this.addEarth();
+        /*const axesHelper = new THREE.AxesHelper( 1000 );
+        axesHelper.position.set(0, earthRadius, 0)
+        this.scene.add( axesHelper );
+        */
     }
 
     render = () => {
@@ -141,8 +152,8 @@ export class Engine {
     //<---------------------------Scene_Contents---------------------------->
 
     addEarth = () => {
-        var axisTilt = this.degreesToRadians(23.4)
-        var earthSpeed = this.degreesToRadians(0.005)
+        var axisTilt = Telemetry.degreesToRadians(23.4)
+        var rotationRate = 360 / 86400;
 
         const textureLoader = new THREE.TextureLoader();
         const group = new THREE.Group();
@@ -185,8 +196,22 @@ export class Engine {
         group.add(this.earthCloudMesh);
         group.add(this.earthAtmosphereMesh);
 
-        group.rotation.z = axisTilt
+        var month = new Date().getMonth();
 
+        if (spring.includes(month)) {
+            group.rotation.z -= axisTilt;
+        } else if (summer.includes(month)) {
+            group.rotation.x += axisTilt;
+        } else if (autumn.includes(month)) {
+            group.rotation.z += axisTilt;
+        } else if (winter.includes(month)) {
+            group.rotation.x -= axisTilt;
+        }
+
+        var seconds = (new Date().getHours() * 60 * 60) + (new Date().getMinutes() * 60) + new Date().getSeconds();
+        group.rotation.y += Telemetry.degreesToRadians(rotationRate * seconds);
+
+        console.log(group)
         this.earth = group;
         this.scene.add(this.earth);
     }
@@ -264,23 +289,28 @@ export class Engine {
         this.render();
     }
 
+    setupSatelliteSprites = (color) => {
+        const textureLoader = new THREE.TextureLoader();
+
+        this.selectedStationMaterial = new THREE.SpriteMaterial({
+            map: textureLoader.load(circle),
+            color: 0x00FF00,
+            sizeAttenuation: false
+        });
+        this.stationMaterial = new THREE.SpriteMaterial({
+            map: textureLoader.load(circle),
+            color: color,
+            sizeAttenuation: false
+        });
+    }
+
     getSatellite = (color, size) => {
         // Input or default
         color = color || 0xFFFFFF;
-        size = size || satelliteSize;
-
-        let geometry = new THREE.SphereGeometry(25, 50, 50);
-        this.selectedStationMaterial = new THREE.MeshBasicMaterial({
-            color: 0x00FF00,
-            transparent: false,
-            depthTest: true
-        })
-        this.stationMaterial = new THREE.MeshBasicMaterial({
-            color: color,
-            transparent: false,
-            depthTest: true
-        })
-        return new THREE.Mesh(geometry, this.stationMaterial);
+        this.setupSatelliteSprites(color);
+        const result = new THREE.Sprite(this.stationMaterial);
+        result.scale.set(size / 5000, size / 5000, 1);
+        return result;
     }
 
     getSatellitePosition = (station, date) => {
@@ -296,13 +326,8 @@ export class Engine {
         this.stations.forEach(station => {
             this.updateSatellitePosition(station, date);
         });
-
-        if (this.referenceFrame === 2) {
-            this.updateEarthRotation(date);
-        }
-        else {
-            this.render();
-        }
+        this.updateEarthRotation(date);
+        this.render();
     }
 
     updateSatellitePosition = (station, date) => {
@@ -314,11 +339,9 @@ export class Engine {
         station.mesh.position.set(pos.x, pos.y, pos.z);
     }
 
-    updateEarthRotation = (date) => {
-        const gst = satellite.gstime(date)
-        this.earthMesh.setRotationFromEuler(new THREE.Euler(0, gst, 0));
-
-        this.render();
+    updateEarthRotation = () => {
+        this.earthMesh.rotation.y += Telemetry.degreesToRadians(rotationRate);
+        this.earthCloudMesh.rotation.y += 0.0005
     }
 
     findStationInScene = (threeObject) => {
@@ -328,9 +351,4 @@ export class Engine {
         }
         return null;
     }
-
-    degreesToRadians = (degrees) => {
-        return degrees * (Math.PI / 180)
-    }
-
 }

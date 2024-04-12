@@ -98,11 +98,11 @@ class App extends React.Component{
     addSatellites() {
         var ISS = { 
             name: "ISS",
-            tleLine1: '1 25544U 98067A   19156.50900463  .00003075  00000-0  59442-4 0  9992',
-            tleLine2: '2 25544  51.6433  59.2583 0008217  16.4489 347.6017 15.51174618173442',
+            tleLine1: '1 25544U 98067A   24101.03904484  .00012558  00000-0  22725-3 0  9992',
+            tleLine2:'2 25544  51.6391 293.2963 0004827  53.6203  54.5347 15.50046419447975'
         }
         this.state.stations.push(ISS)
-        this.engine.addSatellite(ISS, 0xFF0000, 50);
+        this.engine.addSatellite(ISS, 0xFFFFFF, 50);
     }
 
     render() {

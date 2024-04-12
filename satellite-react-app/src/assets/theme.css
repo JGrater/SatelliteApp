@@ -82,6 +82,7 @@ h1 {
 .RemoveButton {
   float: right;
   cursor: pointer;
+  font-size: x-large;
 }
 
 .SmallButton {
