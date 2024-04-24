@@ -3,7 +3,6 @@ import * as Telemetry from './telemetry';
 import * as Shaders from './shaders';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { earthRadius } from "satellite.js/lib/constants";
-import * as satellite from 'satellite.js/lib/index';
 import earthMap from './assets/Earth/2_no_clouds_16k.jpg'
 import earthBumpMap from './assets/Earth/elev_bump_16k.jpg'
 import earthSeaMap from './assets/Earth/water_16k.png'
@@ -30,6 +29,7 @@ export class Engine {
     stations = [];
     referenceFrame = 1;
     el = null;
+    selected = null;
 
     //<---------------------------Initialise---------------------------->
 
@@ -74,12 +74,14 @@ export class Engine {
         if (intersects && intersects.length > 0) {
             const picked = intersects[0].object;
             if (picked) {
-                station = this.findStationInScene(picked);
+                station = this.findStationInScene(picked);            
             }
         }
 
         const cb = this.options.onStationClicked;
-        if (cb) cb(station);
+        if (cb) {
+            cb(station)
+        };
     }
 
     handleWindowResize= () => {
@@ -123,6 +125,7 @@ export class Engine {
         this.controls.dampingFactor = 0.12;
         this.camera.position.x -= earthRadius * 4;
         this.camera.lookAt(0,0,0);
+
     }
 
     setLights = () => {
@@ -211,7 +214,6 @@ export class Engine {
         var seconds = (new Date().getHours() * 60 * 60) + (new Date().getMinutes() * 60) + new Date().getSeconds();
         group.rotation.y += Telemetry.degreesToRadians(rotationRate * seconds);
 
-        console.log(group)
         this.earth = group;
         this.scene.add(this.earth);
     }
@@ -273,12 +275,15 @@ export class Engine {
         station.orbit.geometry.dispose();
         station.orbit = null;
         station.mesh.material = this.stationMaterial;
+
+        this.selected = null;
     }
 
     addSatellite = (station, color, size) => {
         const sat = this.getSatellite(color, size);
         const pos = this.getSatellitePosition(station, new Date());
         sat.position.set(pos.x, pos.y, pos.z);
+        sat.name = station.name;
         station.mesh = sat;
 
         this.stations.push(station);
@@ -326,6 +331,7 @@ export class Engine {
             this.updateSatellitePosition(station, date);
         });
         this.updateEarthRotation(date);
+        this.updateFocusStation()
         this.render();
     }
 
@@ -343,11 +349,35 @@ export class Engine {
         this.earthCloudMesh.rotation.y += 0.0005
     }
 
+    updateFocusStation = () => {
+        if (this.selected == null) {
+            this.camera.lookAt(this.earth.position)
+            this.controls.target.copy(this.earth.position);
+            this.controls.minDistance = earthRadius + 1
+            return;
+        }
+        var selected_station = this.getStationByName(this.selected)
+
+        var translation = new THREE.Vector3();
+        selected_station[0].mesh.matrixWorld.decompose(translation, new THREE.Quaternion(), new THREE.Vector3());
+
+        this.camera.lookAt(translation);
+        this.controls.target.copy(translation);
+        this.controls.minDistance = 1000;
+    }
+
     findStationInScene = (threeObject) => {
         for (var i = 0; i < this.stations.length; i++) {
             const s = this.stations[i];
-            if (s.mesh === threeObject) return s;
+            if (s.mesh === threeObject) {
+                this.selected = s.name;
+                return s;
+            }
         }
         return null;
+    }
+
+    getStationByName = (name) => {
+        return this.stations.filter(function(s) { return s.name === name; });
     }
 }

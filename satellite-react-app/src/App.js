@@ -85,12 +85,13 @@ class App extends React.Component{
         this.setState({selected: newSelected});
 
         this.engine.addOrbit(station);
-        //this.engine.changeView()
     }
 
     deselectStation = () => {
         this.state.selected.forEach(s => this.engine.removeOrbit(s));
-        this.setState({selected: []});
+        while(this.state.selected.length > 0) {
+            this.state.selected.pop();
+        }
     }
 
     addSatellites() {
@@ -114,7 +115,7 @@ class App extends React.Component{
                 return res.text().then(text => {
                     const stations = this.parseTleFile(text)
                     stations.forEach(s => {
-                        this.engine.addSatellite(s, 0xFFFFFF, 50)
+                        this.engine.addSatellite(s, 0xFFFFFF, 45)
                     })
                     this.engine.render();
                     return stations;
@@ -156,7 +157,7 @@ class App extends React.Component{
         return (
             <div>
                 <Info stations={stations} />
-                <SelectedStation selected={selected} onRemoveStation={this.handleRemoveSelected} />
+                <SelectedStation selected={selected} onRemoveStation={this.handleRemoveSelected} onStationClick={this.handleRemoveAllSelected}/>
                 <div ref={c => this.el = c} style={{ width: '99%', height: '99%' }} />
             </div>
         )
