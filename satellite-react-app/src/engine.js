@@ -264,6 +264,7 @@ export class Engine {
         var orbitCurve = new THREE.Line(geometry, this.orbitMaterial);
         station.orbit = orbitCurve;
         station.mesh.material = this.selectedStationMaterial;
+        this.selected = station.name;
         this.earth.add(orbitCurve);
         this.render();
     }
@@ -370,7 +371,6 @@ export class Engine {
         for (var i = 0; i < this.stations.length; i++) {
             const s = this.stations[i];
             if (s.mesh === threeObject) {
-                this.selected = s.name;
                 return s;
             }
         }

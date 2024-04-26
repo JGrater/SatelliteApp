@@ -3,10 +3,12 @@ import "./assets/theme.css";
 import { Engine } from "./engine";
 import SelectedStation from "./Search/SelectedStation";
 import Info from "./Info";
-
+import activeSats from './assets/tle/active_satellites.txt';
+import activeStarlink from './assets/tle/active_starlink.txt';
+import activeGeo from './assets/tle/active_geostationary.txt';
+var fs = require('fs'); 
 
 class App extends React.Component{
-    
     state = {
         selected: [],
         stations: [], 
@@ -103,7 +105,7 @@ class App extends React.Component{
         this.state.stations.push(ISS)
         this.engine.addSatellite(ISS, 0xFFFFFF, 50);*/
 
-        this.fetchSatellites('https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=tle')
+        this.fetchSatellites(activeSats)            //'https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=tle'
             .then(stations => {
                 this.setState({stations});
             })
