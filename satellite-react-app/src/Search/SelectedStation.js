@@ -1,5 +1,5 @@
 import React from 'react';
-import { StationCard } from './SearchResults';
+import { InfoCard, StationCard } from './SearchResults';
 
 export default function({selected, onRemoveStation, onStationClick}) {
     if (!selected || selected.length === 0) return null;
@@ -7,7 +7,7 @@ export default function({selected, onRemoveStation, onStationClick}) {
     return (
         <div className='Selected'>
             {selected.map((station, i) => {
-                return <StationCard 
+                return <InfoCard 
                     station={station} 
                     key={station.name + i} 
                     onRemoveClick={onRemoveStation}

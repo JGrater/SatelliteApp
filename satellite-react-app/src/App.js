@@ -1,6 +1,7 @@
 import React from "react";
 import "./assets/theme.css";
 import { Engine } from "./engine";
+import Search from "./Search/Search";
 import SelectedStation from "./Search/SelectedStation";
 import Info from "./Info";
 import activeSats from './assets/tle/active_satellites.txt';
@@ -54,6 +55,12 @@ class App extends React.Component{
         const newType = this.state.referenceFrame === 1 ? 2 : 1;
         this.setState({referenceFrame: newType});
         this.engine.setReferenceFrame(newType);
+    }
+
+    handleSearchResultClick = (station) => {
+        if (!station) return;
+        
+        this.toggleSelection(station);
     }
 
     handleRemoveSelected = () => {        
@@ -159,6 +166,7 @@ class App extends React.Component{
         return (
             <div>
                 <Info stations={stations} />
+                <Search stations={stations} onResultClick={this.handleSearchResultClick} />
                 <SelectedStation selected={selected} onRemoveStation={this.handleRemoveSelected} onStationClick={this.handleRemoveAllSelected}/>
                 <div ref={c => this.el = c} style={{ width: '99%', height: '99%' }} />
             </div>

@@ -24,8 +24,21 @@ const SearchResults = ({stations, searchText, onResultClick}) => {
     )
 }
 
-
 export const StationCard = ({station, onClick, onRemoveClick, className}) => {
+
+    const noradId = station.satrec && station.satrec.satnum;
+    
+    return (
+        <div className={'Result ' + (className || '')} onClick={e => onClick && onClick(station)}>
+            <p>
+                <span title={noradId ? 'NORAD ID: ' + noradId : null}>{station.name}</span>
+            </p>
+        </div>
+    )
+}
+
+
+export const InfoCard = ({station, onClick, onRemoveClick, className}) => {
 
     const noradId = station.satrec && station.satrec.satnum;
     
