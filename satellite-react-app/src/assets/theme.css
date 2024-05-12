@@ -101,6 +101,14 @@ h1 {
       top: 10px;
       left: 10px;
   }
+
+  .Refresh {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: transparent;
+    color: white;
+}
   
   .Search {
       position: absolute;
@@ -130,6 +138,19 @@ h1 {
       overflow: hidden;
       width: 150px;
   }
+
+  .Groups {
+    position: absolute;
+    border: none;
+    border-radius: 0px;
+    padding: 5px 0;
+    background-color: transparent;
+    color: white;
+    font-size: 2em;
+    outline: none;
+    left: 10px;
+    top: 100px;
+  }
 }
 
 @media screen and (min-width: 1000px) {
@@ -139,6 +160,14 @@ h1 {
       top: 100px;
       left: 50px;
   }
+
+  .Refresh {
+    position: absolute;
+    top: 50px;
+    right: 50px;
+    background-color: transparent;
+    color: white;
+}
   
   .Search {
       position: absolute;
@@ -172,5 +201,18 @@ h1 {
       align-items: flex-start;
       height: 60vh;
       max-width: 70vw;
+  }
+
+  .Groups {
+    position: absolute;
+    border: none;
+    border-radius: 0px;
+    padding: 5px 0;
+    background-color: transparent;
+    color: white;
+    font-size: 2em;
+    outline: none;
+    left: 50px;
+    top: 250px;
   }
 }

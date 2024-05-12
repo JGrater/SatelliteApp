@@ -66,6 +66,9 @@ export class Engine {
             (e.clientX / this.el.clientWidth) * 2 - 1,
             -(e.clientY / this.el.clientHeight) * 2 + 1
         );
+
+        this.raycaster.params.Points.threshold = 0.0001;
+
         this.raycaster.setFromCamera(mouse, this.camera);
 
         let station = null;
@@ -85,8 +88,8 @@ export class Engine {
     }
 
     handleWindowResize= () => {
-        this.renderer.setSize(this.width, this.height);
-        this.camera.aspect = this.width / this.height;
+        this.renderer.setSize(this.el.clientWidth, this.el.clientHeight);
+        this.camera.aspect = this.el.clientWidth / this.el.clientHeight;
         this.camera.updateProjectionMatrix();
 
         this.render();
@@ -125,7 +128,6 @@ export class Engine {
         this.controls.dampingFactor = 0.12;
         this.camera.position.x -= earthRadius * 4;
         this.camera.lookAt(0,0,0);
-
     }
 
     setLights = () => {
@@ -280,6 +282,15 @@ export class Engine {
         this.selected = null;
     }
 
+    removeAllSatellites = () => {
+        this.stations.forEach(station => {
+            this.earth.remove(this.earth.getObjectByName(station.name));
+            station.mesh.material.dispose();
+        })
+        this.stations = [];
+        this.render();
+    }
+
     addSatellite = (station, color, size) => {
         const sat = this.getSatellite(color, size);
         const pos = this.getSatellitePosition(station, new Date());
@@ -288,8 +299,6 @@ export class Engine {
         station.mesh = sat;
 
         this.stations.push(station);
-
-        if (station.orbitMinutes > 0) this.addOrbit(station);
 
         this.earth.add(sat);
     }

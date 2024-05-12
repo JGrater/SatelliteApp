@@ -4,12 +4,10 @@ import { Engine } from "./engine";
 import Search from "./Search/Search";
 import SelectedStation from "./Search/SelectedStation";
 import Info from "./Info";
-import activeSats from './assets/tle/active_satellites.txt';
-import activeStarlink from './assets/tle/active_starlink.txt';
-import activeGeo from './assets/tle/active_geostationary.txt';
-var fs = require('fs'); 
-
+import SelectedGroups from "./Search/SelectedGroups";
+    
 class App extends React.Component{
+
     state = {
         selected: [],
         stations: [], 
@@ -18,13 +16,40 @@ class App extends React.Component{
         referenceFrame: 1
     }
 
+    groups = {
+        active: {
+            title: 'active',
+            url: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=tle',
+            cache: {
+                data: null,
+                timestamp: null
+            }
+        },
+        geostationary: {
+            title: 'geostationary',
+            url: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=geo&FORMAT=tle',
+            cache: {
+                data: null,
+                timestamp: null
+            }
+        },
+        starlink: {
+            title: 'starlink',
+            url: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=starlink&FORMAT=tle',
+            cache: {
+                data: null,
+                timestamp: null
+            }
+        }
+    }
+
     componentDidMount() {
         this.engine = new Engine();
         this.engine.referenceFrame = this.state.referenceFrame;
         this.engine.initialise(this.el, {
             onStationClicked: this.handleStationClicked
         });
-        this.addSatellites();
+        this.fetchSatellites(this.groups.active);
         
         this.engine.updateScene(new Date());
 
@@ -59,8 +84,13 @@ class App extends React.Component{
 
     handleSearchResultClick = (station) => {
         if (!station) return;
-        
+
         this.toggleSelection(station);
+    }
+
+    handleGroupClick = (group) => {
+        if (!group) return;
+        this.selectGroup(group);
     }
 
     handleRemoveSelected = () => {        
@@ -103,34 +133,59 @@ class App extends React.Component{
         }
     }
 
-    addSatellites() {
-        /*var ISS = { 
-            name: "ISS",
-            tleLine1: '1 25544U 98067A   24101.03904484  .00012558  00000-0  22725-3 0  9992',
-            tleLine2:'2 25544  51.6391 293.2963 0004827  53.6203  54.5347 15.50046419447975'
+    selectGroup = (selectedGroup) => {
+        this.removeSatellites();
+        switch(selectedGroup) {
+            case "active":
+                this.fetchSatellites(this.groups.active);
+                break;
+            case "starlink":
+                this.fetchSatellites(this.groups.starlink);
+                break;
+            case "geostationary":
+                this.fetchSatellites(this.groups.geostationary);
+                break;
         }
-        this.state.stations.push(ISS)
-        this.engine.addSatellite(ISS, 0xFFFFFF, 50);*/
-
-        this.fetchSatellites(activeSats)            //'https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=tle'
-            .then(stations => {
-                this.setState({stations});
-            })
     }
 
-    fetchSatellites(url) {
-        return fetch(url).then(res => {
+    removeSatellites() {
+        console.log("Removing sats")
+        this.deselectStation()
+        this.engine.removeAllSatellites();
+        this.setState({stations: []})
+    }
+
+    fetchSatellites(group) {
+        if (group.cache.data && group.cache.timestamp) {
+            console.log('fetching from cache')
+            const stations = this.parseTleFile(group.cache.data)
+            this.addSatellites(stations);
+            return;
+        }
+
+        fetch(group.url).then(res => {
+            console.log('fetching from celestrak')
             if (res.ok) {
                 return res.text().then(text => {
-                    const stations = this.parseTleFile(text)
-                    stations.forEach(s => {
-                        this.engine.addSatellite(s, 0xFFFFFF, 45)
-                    })
-                    this.engine.render();
-                    return stations;
+                    group.cache = {
+                        data: text,
+                        timestamp: new Date()
+                    };
+                    const stations = this.parseTleFile(text);
+                    this.addSatellites(stations);
                 })
             }
         })
+
+        //'https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=tle'
+    }
+
+    addSatellites(stations) {
+        stations.forEach(s => {
+            this.engine.addSatellite(s, 0xFFFFFF, 45)
+        })
+        this.engine.render();
+        this.setState({stations});
     }
 
     parseTleFile(tleFile) {
@@ -167,6 +222,7 @@ class App extends React.Component{
             <div>
                 <Info stations={stations} />
                 <Search stations={stations} onResultClick={this.handleSearchResultClick} />
+                <SelectedGroups onChange={this.handleGroupClick}/>
                 <SelectedStation selected={selected} onRemoveStation={this.handleRemoveSelected} onStationClick={this.handleRemoveAllSelected}/>
                 <div ref={c => this.el = c} style={{ width: '99%', height: '99%' }} />
             </div>
