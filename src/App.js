@@ -48,6 +48,14 @@ class App extends React.Component{
                 data: null,
                 timestamp: null
             }
+        },
+        all: {
+            title: 'all',
+            url: null,
+            cache: {
+                data: null,
+                timestamp: null
+            }
         }
     }
 
@@ -154,7 +162,13 @@ class App extends React.Component{
                 this.fetchStation(this.groups.geostationary);
                 break;
             case "debris":
-                this.fetchDebris(this.groups.debris);
+                this.fetchStation(this.groups.debris);
+                break;
+            case "all":
+                this.fetchStation(this.groups.active);
+                this.fetchStation(this.groups.starlink);
+                this.fetchStation(this.groups.geostationary);
+                this.fetchStation(this.groups.debris);
                 break;
         }
     }
@@ -235,7 +249,9 @@ class App extends React.Component{
             this.engine.addSatellite(s, 0xFFFFFF, 45)
         })
         this.engine.render();
-        this.setState({stations});
+        this.setState(prevState => ({
+            stations: [...prevState.stations, ...stations]
+        }));
     }
 
     parseTleFile(tleFile) {

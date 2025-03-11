@@ -16,6 +16,7 @@ class SelectedGroups extends Component {
                     <option value={"geostationary"}>Geostationary</option>
                     <option value={"starlink"}>Starlink</option>
                     <option value={"debris"}>Debris</option>
+                    <option value={"all"}>All</option>
                 </select>
             </div>
         )
