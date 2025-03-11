@@ -8,9 +8,12 @@ app.use(cors())
 app.use(bodyParser.json());
 
 // Define your Space-Track credentials
+const username = 'your_username';
+const password = 'your_password';
+
 const loginData = new FormData();
-loginData.append("identity", "username");
-loginData.append("password", "password");
+loginData.append("identity", username);
+loginData.append("password", password);
 
 // Space-Track base URL
 const spaceTrackBaseUrl = 'https://www.space-track.org';
