@@ -57,7 +57,7 @@ class App extends React.Component{
         this.engine.initialise(this.el, {
             onStationClicked: this.handleStationClicked
         });
-        this.fetchSatellites(this.groups.active);
+        this.fetchStation(this.groups.active);
         
         this.engine.updateScene(new Date());
 
@@ -145,16 +145,16 @@ class App extends React.Component{
         this.removeSatellites();
         switch(selectedGroup) {
             case "active":
-                this.fetchSatellites(this.groups.active);
+                this.fetchStation(this.groups.active);
                 break;
             case "starlink":
-                this.fetchSatellites(this.groups.starlink);
+                this.fetchStation(this.groups.starlink);
                 break;
             case "geostationary":
-                this.fetchSatellites(this.groups.geostationary);
+                this.fetchStation(this.groups.geostationary);
                 break;
             case "debris":
-                this.fetchDebris(this.groups.debris.url);
+                this.fetchDebris(this.groups.debris);
                 break;
         }
     }
@@ -166,14 +166,8 @@ class App extends React.Component{
         this.setState({stations: []})
     }
 
-    fetchDebris = async (url) => {
-        if (this.groups.debris.cache.data && this.groups.debris.cache.timestamp) {
-            console.log('fetching from cache')
-            const stations = this.parseTleFile(this.groups.debris.cache.data)
-            this.addSatellites(stations);
-            return;
-        }
- 
+    fetchDebris = async (group) => {
+        const url = group.url;
         try {
             console.log('fetching from space-track-api')
             const res = await fetch('http://localhost:3001/fetch-debris', {
@@ -186,7 +180,7 @@ class App extends React.Component{
  
             if (res.ok) {
                 const satelliteData = await res.json();
-                this.groups.debris.cache = {
+                group.cache = {
                     data: satelliteData,
                     timestamp: new Date()
                 };
@@ -197,11 +191,31 @@ class App extends React.Component{
                 console.error('Failed to fetch satellite data');
             }
         } catch(error) {
+            console.error('Error fetching debris data:', error);
+        }
+    }
+
+    fetchSatellite(group) {
+        try {
+            fetch(group.url).then(res => {
+                console.log('fetching from celestrak api')
+                if (res.ok) {
+                    return res.text().then(text => {
+                        group.cache = {
+                            data: text,
+                            timestamp: new Date()
+                        };
+                        const stations = this.parseTleFile(text);
+                        this.addSatellites(stations);
+                    })
+                }
+            })
+        } catch (error) {
             console.error('Error fetching satellite data:', error);
         }
     }
 
-    fetchSatellites(group) {
+    fetchStation(group) {
         if (group.cache.data && group.cache.timestamp) {
             console.log('fetching from cache')
             const stations = this.parseTleFile(group.cache.data)
@@ -209,19 +223,11 @@ class App extends React.Component{
             return;
         }
 
-        fetch(group.url).then(res => {
-            console.log('fetching from celestrak')
-            if (res.ok) {
-                return res.text().then(text => {
-                    group.cache = {
-                        data: text,
-                        timestamp: new Date()
-                    };
-                    const stations = this.parseTleFile(text);
-                    this.addSatellites(stations);
-                })
-            }
-        })
+        if (group.title == 'debris') {
+            this.fetchDebris(group);
+        } else {
+            this.fetchSatellite(group);
+        }
     }
 
     addSatellites(stations) {
