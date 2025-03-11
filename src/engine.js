@@ -294,13 +294,15 @@ export class Engine {
     addSatellite = (station, color, size) => {
         const sat = this.getSatellite(color, size);
         const pos = this.getSatellitePosition(station, new Date());
-        sat.position.set(pos.x, pos.y, pos.z);
-        sat.name = station.name;
-        station.mesh = sat;
+        if (pos != null) {
+            sat.position.set(pos.x, pos.y, pos.z);
+            sat.name = station.name;
+            station.mesh = sat;
 
-        this.stations.push(station);
+            this.stations.push(station);
 
-        this.earth.add(sat);
+            this.earth.add(sat);
+        }
     }
 
     setupSatelliteSprites = (color) => {

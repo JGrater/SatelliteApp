@@ -40,6 +40,14 @@ class App extends React.Component{
                 data: null,
                 timestamp: null
             }
+        },
+        debris: {
+            title: 'debris',
+            url: 'https://www.space-track.org/basicspacedata/query/class/gp/OBJECT_TYPE/%3C%3EPayload/DECAY_DATE/null-val/orderby/DECAY_DATE%20asc/format/3le/emptyresult/show',
+            cache: {
+                data: null,
+                timestamp: null
+            }
         }
     }
 
@@ -145,6 +153,9 @@ class App extends React.Component{
             case "geostationary":
                 this.fetchSatellites(this.groups.geostationary);
                 break;
+            case "debris":
+                this.fetchDebris(this.groups.debris.url);
+                break;
         }
     }
 
@@ -153,6 +164,41 @@ class App extends React.Component{
         this.deselectStation()
         this.engine.removeAllSatellites();
         this.setState({stations: []})
+    }
+
+    fetchDebris = async (url) => {
+        if (this.groups.debris.cache.data && this.groups.debris.cache.timestamp) {
+            console.log('fetching from cache')
+            const stations = this.parseTleFile(this.groups.debris.cache.data)
+            this.addSatellites(stations);
+            return;
+        }
+ 
+        try {
+            console.log('fetching from space-track-api')
+            const res = await fetch('http://localhost:3001/fetch-debris', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ url })
+            });
+ 
+            if (res.ok) {
+                const satelliteData = await res.json();
+                this.groups.debris.cache = {
+                    data: satelliteData,
+                    timestamp: new Date()
+                };
+                const stations = this.parseTleFile(satelliteData);
+                console.log(stations);
+                this.addSatellites(stations);
+            } else {
+                console.error('Failed to fetch satellite data');
+            }
+        } catch(error) {
+            console.error('Error fetching satellite data:', error);
+        }
     }
 
     fetchSatellites(group) {
@@ -176,8 +222,6 @@ class App extends React.Component{
                 })
             }
         })
-
-        //'https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=tle'
     }
 
     addSatellites(stations) {
@@ -211,13 +255,11 @@ class App extends React.Component{
                 result.push(current);
             }
         }
-
         return result;
     }
 
     render() {
         const { selected, stations, initialDate, currentDate } = this.state;
-
         return (
             <div>
                 <Info stations={stations} />

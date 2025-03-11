@@ -37,6 +37,10 @@ export const getPositionFromTle = (station, date, type = 1) => {
     if (!station || !date) return null;
 
     const positionVelocity = getPropagation(station, date);
+    if (positionVelocity.position === undefined) {
+        console.error("Undefined position data.");
+        return null;
+    }
     if (!positionVelocity || isNaN(positionVelocity.position.x) || isNaN(positionVelocity.position.y) || isNaN(positionVelocity.position.z)) {
         console.error("Invalid position data or NaN values.");
         return null;
