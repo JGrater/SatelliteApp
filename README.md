@@ -5,7 +5,6 @@ SatelliteApp is a tool designed to track satellites using data from CelesTrak an
 ## Prerequisites
 
 - Ensure you have a Space Track account. You can create one at [Space Track](https://www.space-track.org/).
-- Clone the repository from [satellite-tracker](https://github.com/dsuarezv/satellite-tracker) which was used as a reference for this project.
 
 ## Setup
 
